@@ -15,6 +15,15 @@
 #include <threads.h>
 #include <unistd.h>
 
+enum mode {
+	MODE_IPV4 = 0x1,
+	MODE_IPV6 = 0x2,
+	MODE_IPV4MAPPED = 0x4,
+
+	MODE_ALL = MODE_IPV4 | MODE_IPV6 | MODE_IPV4MAPPED,
+};
+
+static int opt_mode;
 static int opt_shutdown;
 static int opt_quiet;
 
@@ -293,21 +302,21 @@ client6(const char *laddr_str, const char *raddr_str, in_port_t rport)
 }
 
 struct conn {
-	sa_family_t family;
+	int         mode;
 	const char *laddr;
 	const char *raddr;
 };
 
 struct conn conns[] = {
 	// IPv4
-	// {.family = AF_INET, .laddr = "0.0.0.0", .raddr = "127.0.0.1"},
-	// {.family = AF_INET, .laddr = "127.0.0.1", .raddr = "127.0.0.1"},
+	{.mode = MODE_IPV4, .laddr = "0.0.0.0", .raddr = "127.0.0.1"},
+	// {.mode = MODE_IPV4, .laddr = "127.0.0.1", .raddr = "127.0.0.1"},
 	// IPv6
-	// {.family = AF_INET6, .laddr = "::", .raddr = "::1"},
-	// {.family = AF_INET6, .laddr = "::1", .raddr = "::1"},
+	{.mode = MODE_IPV6, .laddr = "::", .raddr = "::1"},
+	// {.mode = MODE_IPV6, .laddr = "::1", .raddr = "::1"},
 	// IPv4-mapped
-	{.family = AF_INET6, .laddr = "::", .raddr = "127.0.0.1"},
-	// {.family = AF_INET6, .laddr = "127.0.0.1", .raddr = "127.0.0.1"},
+	{.mode = MODE_IPV4MAPPED, .laddr = "::", .raddr = "127.0.0.1"},
+	// {.mode = MODE_IPV4MAPPED, .laddr = "127.0.0.1", .raddr = "127.0.0.1"},
 };
 
 int
@@ -318,8 +327,17 @@ main(int argc, char *argv[])
 	struct sockaddr_in6 saddr6;
 	thrd_t              thr4, thr6;
 
-	while ((opt = getopt(argc, argv, "sqh")) != -1) {
+	while ((opt = getopt(argc, argv, "46Msqh")) != -1) {
 		switch (opt) {
+			case '4':
+				opt_mode |= MODE_IPV4;
+				break;
+			case '6':
+				opt_mode |= MODE_IPV6;
+				break;
+			case 'M':
+				opt_mode |= MODE_IPV4MAPPED;
+				break;
 			case 's':
 				opt_shutdown = 1;
 				break;
@@ -334,6 +352,9 @@ main(int argc, char *argv[])
 				exit(EX_USAGE);
 		}
 	}
+
+	if (opt_mode == 0)
+		opt_mode = MODE_ALL;
 
 	cnd_init(&server_cnd);
 	mtx_init(&server_mtx, mtx_plain);
@@ -350,11 +371,12 @@ main(int argc, char *argv[])
 
 	for (;;) {
 		for (size_t i = 0; i < sizeof(conns) / sizeof(conns[0]); i++) {
-			switch (conns[i].family) {
-				case AF_INET:
+			switch (opt_mode & conns[i].mode) {
+				case MODE_IPV4:
 					client4(conns[i].laddr, conns[i].raddr, saddr4.sin_port);
 					break;
-				case AF_INET6:
+				case MODE_IPV6:
+				case MODE_IPV4MAPPED:
 					client6(conns[i].laddr, conns[i].raddr, saddr6.sin6_port);
 					break;
 			}
