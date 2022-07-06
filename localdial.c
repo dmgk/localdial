@@ -300,14 +300,14 @@ struct conn {
 
 struct conn conns[] = {
 	// IPv4
-	{.family = AF_INET, .laddr = "0.0.0.0", .raddr = "127.0.0.1"},
-	{.family = AF_INET, .laddr = "127.0.0.1", .raddr = "127.0.0.1"},
+	// {.family = AF_INET, .laddr = "0.0.0.0", .raddr = "127.0.0.1"},
+	// {.family = AF_INET, .laddr = "127.0.0.1", .raddr = "127.0.0.1"},
 	// IPv6
-	{.family = AF_INET6, .laddr = "::", .raddr = "::1"},
-	{.family = AF_INET6, .laddr = "::1", .raddr = "::1"},
+	// {.family = AF_INET6, .laddr = "::", .raddr = "::1"},
+	// {.family = AF_INET6, .laddr = "::1", .raddr = "::1"},
 	// IPv4-mapped
 	{.family = AF_INET6, .laddr = "::", .raddr = "127.0.0.1"},
-	{.family = AF_INET6, .laddr = "127.0.0.1", .raddr = "127.0.0.1"},
+	// {.family = AF_INET6, .laddr = "127.0.0.1", .raddr = "127.0.0.1"},
 };
 
 int
